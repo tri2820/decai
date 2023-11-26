@@ -1,13 +1,39 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + TS</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vite + TS</title>
+</head>
+
+<body>
+  <div id="app">
+    <div>
+      <h1>ZKAI</h1>
+      <p class="read-the-docs">
+        Example client sending inference request to decentralized servers. Click on an image to ask the server which
+        digit it is.
+      </p>
+
+      <div>
+        <button class="digit" id="digit-0"><img src="/digits/digit-0.jpg" /></button>
+        <button class="digit" id="digit-1"><img src="/digits/digit-1.jpg" /></button>
+        <button class="digit" id="digit-2"><img src="/digits/digit-2.jpg" /></button>
+        <button class="digit" id="digit-3"><img src="/digits/digit-3.jpg" /></button>
+        <button class="digit" id="digit-4"><img src="/digits/digit-4.jpg" /></button>
+        <button class="digit" id="digit-5"><img src="/digits/digit-5.jpg" /></button>
+        <button class="digit" id="digit-6"><img src="/digits/digit-6.jpg" /></button>
+        <button class="digit" id="digit-7"><img src="/digits/digit-7.jpg" /></button>
+        <button class="digit" id="digit-8"><img src="/digits/digit-8.jpg" /></button>
+        <button class="digit" id="digit-9"><img src="/digits/digit-9.jpg" /></button>
+      </div>
+
+      <pre id="status" />
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>

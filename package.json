@@ -18,8 +18,10 @@
     "@libp2p/kad-dht": "^10.0.15",
     "@libp2p/peer-id-factory": "^3.0.0",
     "@libp2p/tcp": "^8.0.0",
+    "@libp2p/webrtc": "^3.2.3",
     "@libp2p/websockets": "^7.0.0",
     "@multiformats/multiaddr": "^12.1.5",
+    "image-js": "^0.35.5",
     "it-length-prefixed": "^9.0.1",
     "it-map": "^3.0.3",
     "it-pipe": "^3.0.1",
@@ -32,8 +34,8 @@
     "uint8arrays": "^4.0.6"
   },
   "devDependencies": {
+    "tsx": "^3.14.0",
     "typescript": "^5.2.2",
-    "vite": "^5.0.0",
-    "tsx": "^3.14.0"
+    "vite": "^5.0.0"
   }
 }

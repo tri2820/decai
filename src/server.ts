@@ -12,12 +12,20 @@ import { sha256 } from 'multiformats/hashes/sha2'
 async function run () {
   // Create a new libp2p node with the given multi-address
   const idServer = await createFromJSON(peerIdServerJson);
-  const server = await createLibp2p({
-    peerId: idServer,
-    addresses: {
-      listen: ['/ip4/0.0.0.0/tcp/10333']
+  const server = await createLibp2p(
+    {
+      peerId: idServer,
+      addresses: {
+        listen: ['/ip4/127.0.0.1/tcp/0/ws']
+      }
     }
-  })
+  //   {
+  //   peerId: idServer,
+  //   addresses: {
+  //     listen: ['/ip4/0.0.0.0/tcp/10333']
+  //   }
+  // }
+  )
   
 
   // Log a message when a remote peer connects to us
@@ -25,15 +33,15 @@ async function run () {
     const remotePeer = evt.detail
     console.log('connected to: ', remotePeer.toString());
 
-    setTimeout(async () => {
-      // (server.services.pubsub as any).publish('model', new TextEncoder().encode('banana'))
+    // setTimeout(async () => {
+    //   // (server.services.pubsub as any).publish('model', new TextEncoder().encode('banana'))
       
-      const bytes = json.encode({ hello: 'world' })
-      const hash = await sha256.digest(bytes)
-      const cid = CID.create(1, json.code, hash)
-      console.log('debug I have', cid);
-      server.contentRouting.provide(cid);
-    }, 500);
+    //   const bytes = json.encode({ hello: 'world' })
+    //   const hash = await sha256.digest(bytes)
+    //   const cid = CID.create(1, json.code, hash)
+    //   console.log('debug I have', cid);
+    //   server.contentRouting.provide(cid);
+    // }, 500);
   })
 
   // Handle messages for the protocol

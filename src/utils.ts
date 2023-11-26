@@ -6,7 +6,7 @@ import map from "it-map";
 import { pipe } from "it-pipe";
 import { pushable } from 'it-pushable';
 import { pack, unpack } from "msgpackr";
-import sharp from "sharp";
+// import sharp from "sharp";
 import { Message, Result } from "./zkai";
 import * as fs from 'fs/promises';
 
@@ -62,7 +62,7 @@ export async function handleMessage(message: Message): Promise<
     }
 
     // Load the model
-    const mnist_circuit_ser = await readDataFile("artifact/network.compiled");
+    const mnist_circuit_ser = await readDataFile("serverOnly/network.compiled");
 
     // Generate witness, which contains both the result and materials to generate proof
     const witness = wasmFunctions.genWitness(mnist_circuit_ser, input_ser);
@@ -117,87 +117,50 @@ export async function handleMessage(message: Message): Promise<
   // Can just store it in the DB or show to client
   // Here we decode the inference output from the witness and print out the result
   if (message.inference_output) {
-    // Load the model settings
-    const circuit_settings_ser = await readDataFile("artifact/settings.json");
-    // Load the respective SRS file that we asked the server to use
-    const srs = await readDataFile(`artifact/${kv[message.inference_output.task_id].srs_id}.srs`);
+    console.log('debug message.inference_output', message);
+    // // Load the model settings
+    // const circuit_settings_ser = await readDataFile("serverOnly/settings.json");
+    // // Load the respective SRS file that we asked the server to use
+    // const srs = await readDataFile(`serverOnly/14.srs`);
 
-    // Verify that the server used the model + input that we asked
-    let verified = wasmFunctions.verify(
-      message.inference_output.proof.data!,
-      message.inference_output.verifying_key.data!,
-      circuit_settings_ser,
-      srs
-    );
-    console.log("verified", verified);
+    // // Verify that the server used the model + input that we asked
+    // let verified = wasmFunctions.verify(
+    //   message.inference_output.proof.data!,
+    //   message.inference_output.verifying_key.data!,
+    //   circuit_settings_ser,
+    //   srs
+    // );
+    // console.log("verified", verified);
 
-    // Decode the output from the witness
-    const witness_des = wasmFunctions.deserialize(message.inference_output.witness.data!);
-    const circuit_settings = wasmFunctions.deserialize(circuit_settings_ser);
+    // // Decode the output from the witness
+    // const witness_des = wasmFunctions.deserialize(message.inference_output.witness.data!);
+    // const circuit_settings = wasmFunctions.deserialize(circuit_settings_ser);
 
-    // Outputs contain probababilities of each digit class
-    const outputs = witness_des.outputs.map((output: any, i: any) =>
-      output.map((item: any) => {
-        const x = wasmFunctions.serialize(item);
-        return wasmFunctions.vecU64ToFloat(
-          x,
-          circuit_settings.model_output_scales[i]
-        );
-      })
-    );
-    console.log("outputs", outputs);
+    // // Outputs contain probababilities of each digit class
+    // const outputs = witness_des.outputs.map((output: any, i: any) =>
+    //   output.map((item: any) => {
+    //     const x = wasmFunctions.serialize(item);
+    //     return wasmFunctions.vecU64ToFloat(
+    //       x,
+    //       circuit_settings.model_output_scales[i]
+    //     );
+    //   })
+    // );
+    // console.log("outputs", outputs);
 
-    // We are using MNIST so we try to get the predicted digit
-    const predicted_digit = outputs.map((digits: number[]) => digits.reduce((iMax: number, x: number, i: number, arr: number[]) => x > arr[iMax] ? i : iMax,0))
-    console.log('predicted digit', predicted_digit)
+    // // We are using MNIST so we try to get the predicted digit
+    // const predicted_digit = outputs.map((digits: number[]) => digits.reduce((iMax: number, x: number, i: number, arr: number[]) => x > arr[iMax] ? i : iMax,0))
+    // console.log('predicted digit', predicted_digit)
 
-    return {
-      data: {},
-    };
+    // return {
+    //   data: {},
+    // };
   }
 
   return {
     data: {},
   };
 }
-
-const createExampleInferenceMessage = async (
-  image_path: string
-): Promise<Message> => {
-  const task_id = randomUUID();
-
-  // Remember that we use 14.srs file for this task, so we can use the same srs file to verify the output
-  kv[task_id] = {
-    // For this MNIST model, we use the 14.srs file
-    // Note: number 14 is the logrows in the model's settings.json file
-    srs_id: 14,
-  };
-
-  // Load the image and use it as input
-  const buffer = await sharp(image_path)
-    .greyscale()
-    .resize(28, 28)
-    .raw()
-    .toBuffer();
-  const pixelArray = Float32Array.from(buffer).map((pixel) => pixel / 255);
-  const inputData = { input_data: [Array.from(pixelArray)] };
-  const data = wasmFunctions.serialize(inputData);
-
-  return {
-    inference_request: {
-      task_id,
-      input: {
-        data
-      },
-      model: {
-        id: "mnist",
-      },
-      srs: {
-        data: await readDataFile(`artifact/${kv[task_id].srs_id}.srs`),
-      },
-    },
-  };
-};
 
 
 function createSendQueue(stream: Stream) {
@@ -248,32 +211,6 @@ export function handleIncomingMessages(stream: Stream) {
   );
 }
 
-export async function MNIST_interactive(stream: Stream) {
-  process.stdin.setEncoding("utf8");
-
-  console.log('Send an image to MNIST network on the server peer')
-  console.log('Input a number from 0 to 9:')
-  pipe(
-    process.stdin,
-    (source) =>
-      map(source, async (string) => {
-        const c = string[0];
-        if (c < "0" || c > "9") {
-          console.log("Input must be a digit (0-9). Try again.");
-          return pack(null);
-        }
-
-        const imagePath = `artifact/digits/${c}.jpg`;
-        console.log(`Sending image ${imagePath}`);
-        const m = await createExampleInferenceMessage(imagePath);
-        return pack(m);
-      }),
-    // Encode with length prefix (so receiving side knows how much data is coming)
-    (source) => lp.encode(source),
-    // Write to the stream (the sink)
-    stream.sink
-  );
-}
 
 export async function NANOGPT_interactive(){
   // TODO:
