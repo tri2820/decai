@@ -11,16 +11,6 @@ import { identifyService } from "libp2p/identify"
 import { webRTC } from '@libp2p/webrtc'
 
 export async function createLibp2p (options?: Libp2pOptions) {
-
-  // // default is to use ipfs.io
-  // const client = createIpfsHttpClient({
-  //   // use default api settings
-  //   protocol: 'https',
-  //   port: 443,
-  //   host: 'node0.delegate.ipfs.io'
-  // })
-
-
   const defaults = {
     transports: [
       webRTC(),

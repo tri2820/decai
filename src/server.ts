@@ -1,30 +1,28 @@
+import * as wasmFunctions from "@ezkljs/engine/nodejs/ezkl.js"
 import { createFromJSON } from '@libp2p/peer-id-factory'
-import { CID } from 'multiformats/cid'
 import { PROTOCOL_NAME } from './constants.js'
 import { createLibp2p } from './libp2p.js'
 import peerIdServerJson from './peer-id-server.js'
-import { handleIncomingMessages } from './utils.js'
-// import multihashing from 'multihashing-async'
+import { createSendQueue, handleIncomingMessages } from './utils.js'
+import { Message } from './zkai.js'
+import * as fs from 'fs/promises'
 
-import * as json from 'multiformats/codecs/json'
-import { sha256 } from 'multiformats/hashes/sha2'
+async function readDataFile(filePath: string): Promise<Uint8ClampedArray> {
+  // const filePath = path.join(__dirname, '..', 'public', 'data', example, filename);
+  const buffer = await fs.readFile(filePath);
+  return new Uint8ClampedArray(buffer.buffer);
+}
 
 async function run () {
-  // Create a new libp2p node with the given multi-address
+  // Create a new libp2p listening for browser clients
   const idServer = await createFromJSON(peerIdServerJson);
   const server = await createLibp2p(
     {
       peerId: idServer,
       addresses: {
-        listen: ['/ip4/127.0.0.1/tcp/0/ws']
+        listen: ['/ip4/127.0.0.1/tcp/35067/ws']
       }
     }
-  //   {
-  //   peerId: idServer,
-  //   addresses: {
-  //     listen: ['/ip4/0.0.0.0/tcp/10333']
-  //   }
-  // }
   )
   
 
@@ -46,7 +44,64 @@ async function run () {
 
   // Handle messages for the protocol
   await server.handle(PROTOCOL_NAME, async ({ stream }) => {
-    handleIncomingMessages(stream)
+    const sendQueue = createSendQueue(stream);
+    const handler = async (message: Message) => {
+      if (!message.inference_request) return;
+      if (!message.inference_request.input.data) return
+      if (!message.inference_request.srs.data) return;
+      if (message.inference_request.model.id !== "mnist") return;
+  
+      // Load the model
+      const mnist_circuit_ser = await readDataFile("serverOnly/network.compiled");
+  
+      // Generate witness, which contains both the result and materials to generate proof
+      const witness = wasmFunctions.genWitness(mnist_circuit_ser, message.inference_request.input.data);
+      const witness_ser = new Uint8ClampedArray(witness.buffer);
+  
+      // Generate verifying key
+      const vk = wasmFunctions.genVk(
+        mnist_circuit_ser,
+        message.inference_request.srs.data
+      );
+      const vk_ser = new Uint8ClampedArray(vk.buffer);
+  
+      // Generate proving key
+      const pk = wasmFunctions.genPk(
+        vk_ser,
+        mnist_circuit_ser,
+        message.inference_request.srs.data
+      );
+      const pk_ser = new Uint8ClampedArray(pk.buffer);
+  
+      // Generate proof
+      const proof = wasmFunctions.prove(
+        witness_ser,
+        pk_ser,
+        mnist_circuit_ser,
+        message.inference_request.srs.data
+      );
+      const proof_ser = new Uint8ClampedArray(proof.buffer);
+  
+      const response = {
+        inference_output: {
+          task_id: message.inference_request.task_id,
+          witness: {
+            data: witness_ser,
+          },
+          proof: {
+            data: proof_ser,
+          },
+          verifying_key: {
+            data: vk_ser,
+          },
+        },
+      }
+
+      console.log('debug send back', response);
+      sendQueue.push(response);
+    };
+
+    handleIncomingMessages(stream, handler);
   })
 
   // Output listen addresses to the console
