@@ -1,9 +1,8 @@
 import "./style.css";
 
-// import init, * as wasmFunctions from "@ezkljs/engine/web/ezkl_bg.wasm?init";
 import init, * as wasmFunctions from "@ezkljs/engine/web/ezkl";
 import Chart from "chart.js/auto";
-
+import { CID } from "multiformats/cid";
 import * as cv from "@techstark/opencv-js";
 import { PROTOCOL_NAME } from "./constants";
 import { createLibp2p } from "./libp2p";
@@ -22,9 +21,7 @@ const DOM = {
   inference_label: document.getElementById(
     "inference_label"
   ) as HTMLImageElement,
-  graph_parent: document.getElementById(
-    "graph_parent"
-  ) as HTMLImageElement,
+  graph_parent: document.getElementById("graph_parent") as HTMLImageElement,
 };
 
 const log = (line: string) => {
@@ -54,7 +51,9 @@ const setInferenceResult = (verified: boolean, outputs: number[][]) => {
   );
   log(`server said that image is ${predicted_digits.at(0)}`);
 
-  DOM.inference_label.innerText = `Verified: ${verified}, inference result: image is digit ${predicted_digits.at(0)}`;
+  DOM.inference_label.innerText = `Verified: ${verified}, inference result: image is digit ${predicted_digits.at(
+    0
+  )}`;
 
   DOM.graph_parent.style.display = "block";
   const data = outputs.at(0)!.map((v, i) => ({
@@ -145,7 +144,6 @@ async function initClient() {
       log("clicked");
       DOM.inference_label.innerText = "Inferencing...";
 
-
       DOM.image_to_inference.src = d.src;
 
       let mat = cv.imread(d);
@@ -183,24 +181,18 @@ async function initClient() {
     })
   );
 
-  // MNIST_interactive(stream)
-  //   // handleIncomingMessages(stream);
+  const mnist_cid = CID.parse("bagaaierasords4njcts6vs7qvdjfcvgnume4hqohf65zsfguprqphs3icwea");
 
-  //   const hcid = CID.parse('bagaaierasords4njcts6vs7qvdjfcvgnume4hqohf65zsfguprqphs3icwea');
-  //   const hproviders = client.contentRouting.findProviders(hcid)
-  //   for await (const evt of hproviders) {
-  //     log('found peer', evt)
-  //   }
-
-  // const cid = CID.parse('QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n');
-  // try {
-  //   const providers = client.contentRouting.findProviders(cid)
-  //   for await (const evt of providers) {
-  //     log('found peer', evt)
-  //   }
-  // } catch {
-  //   log('debug didnt find one')
-  // }
+  setTimeout(async () => {
+    try {
+      const hproviders = client.contentRouting.findProviders(mnist_cid);
+      for await (const evt of hproviders) {
+        log(`found peer providing ${mnist_cid}: ${evt.id}`);
+      }
+    } catch {
+      log("debug didnt find one");
+    }
+  }, 1500)  
 }
 
 initClient();

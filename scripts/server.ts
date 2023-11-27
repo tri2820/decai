@@ -1,13 +1,18 @@
 import * as wasmFunctions from "@ezkljs/engine/nodejs/ezkl.js"
 import { createFromJSON } from '@libp2p/peer-id-factory'
-import { PROTOCOL_NAME } from '../src/constants.js'
-import { createLibp2p } from '../src/libp2p.js'
-import peerIdServerJson from './peer-id-server.js'
-import { createSendQueue, handleIncomingMessages } from '../src/utils.js'
-import type { Message } from '../src/decai'
 import * as fs from 'fs/promises'
-import * as path from 'path';
+import { CID } from 'multiformats/cid'
+import * as path from 'path'
 import { fileURLToPath } from "url"
+import { PROTOCOL_NAME } from '../src/constants.js'
+import type { Message } from '../src/decai'
+import { createLibp2p } from '../src/libp2p.js'
+import { createSendQueue, handleIncomingMessages } from '../src/utils.js'
+import peerIdServerJson from './peer-id-server.js'
+import * as json from 'multiformats/codecs/json'
+import { sha256 } from 'multiformats/hashes/sha2'
+
+
 
 async function readDataFile(filePath: string): Promise<Uint8ClampedArray> {
   const buffer = await fs.readFile(filePath);
@@ -32,15 +37,13 @@ async function run () {
     const remotePeer = evt.detail
     console.log('connected to:', remotePeer.toString());
 
-    // setTimeout(async () => {
-    //   // (server.services.pubsub as any).publish('model', new TextEncoder().encode('banana'))
-      
-    //   const bytes = json.encode({ hello: 'world' })
-    //   const hash = await sha256.digest(bytes)
-    //   const cid = CID.create(1, json.code, hash)
-    //   console.log('debug I have', cid);
-    //   server.contentRouting.provide(cid);
-    // }, 500);
+    setTimeout(async () => {
+      const bytes = json.encode({ hello: 'world' })
+      const hash = await sha256.digest(bytes)
+      const cid = CID.create(1, json.code, hash)
+      console.log('provide:', cid);
+      server.contentRouting.provide(cid);
+    }, 1000);
   })
 
   // Handle messages for the protocol
@@ -102,7 +105,7 @@ async function run () {
         },
       }
 
-      console.log('debug send back', response);
+      console.log('send back', response);
       sendQueue.push(response);
     };
 
@@ -110,7 +113,7 @@ async function run () {
   })
 
   // Output listen addresses to the console
-  console.log('Listener ready, listening on:')
+  console.log('listener ready, listening on:')
   server.getMultiaddrs().forEach((ma) => {
     console.log(ma.toString())
   });
