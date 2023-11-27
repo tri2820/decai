@@ -1,14 +1,15 @@
 import * as wasmFunctions from "@ezkljs/engine/nodejs/ezkl.js"
 import { createFromJSON } from '@libp2p/peer-id-factory'
-import { PROTOCOL_NAME } from './constants.js'
-import { createLibp2p } from './libp2p.js'
+import { PROTOCOL_NAME } from '../src/constants.js'
+import { createLibp2p } from '../src/libp2p.js'
 import peerIdServerJson from './peer-id-server.js'
-import { createSendQueue, handleIncomingMessages } from './utils.js'
-import { Message } from './zkai.js'
+import { createSendQueue, handleIncomingMessages } from '../src/utils.js'
+import type { Message } from '../src/decai'
 import * as fs from 'fs/promises'
+import * as path from 'path';
+import { fileURLToPath } from "url"
 
 async function readDataFile(filePath: string): Promise<Uint8ClampedArray> {
-  // const filePath = path.join(__dirname, '..', 'public', 'data', example, filename);
   const buffer = await fs.readFile(filePath);
   return new Uint8ClampedArray(buffer.buffer);
 }
@@ -29,7 +30,7 @@ async function run () {
   // Log a message when a remote peer connects to us
   server.addEventListener('peer:connect', (evt) => {
     const remotePeer = evt.detail
-    console.log('connected to: ', remotePeer.toString());
+    console.log('connected to:', remotePeer.toString());
 
     // setTimeout(async () => {
     //   // (server.services.pubsub as any).publish('model', new TextEncoder().encode('banana'))
@@ -46,13 +47,17 @@ async function run () {
   await server.handle(PROTOCOL_NAME, async ({ stream }) => {
     const sendQueue = createSendQueue(stream);
     const handler = async (message: Message) => {
+      console.log('inferencing...')
+
       if (!message.inference_request) return;
       if (!message.inference_request.input.data) return
       if (!message.inference_request.srs.data) return;
       if (message.inference_request.model.id !== "mnist") return;
   
       // Load the model
-      const mnist_circuit_ser = await readDataFile("serverOnly/network.compiled");
+      const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      const networkPath = path.join(__dirname, 'network.compiled');
+      const mnist_circuit_ser = await readDataFile(networkPath);
   
       // Generate witness, which contains both the result and materials to generate proof
       const witness = wasmFunctions.genWitness(mnist_circuit_ser, message.inference_request.input.data);

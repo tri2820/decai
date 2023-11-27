@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="icon" type="image/svg+xml" href="/decai.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vite + TS</title>
 </head>
@@ -11,7 +11,7 @@
 <body>
   <div id="app">
     <div>
-      <h1>ZKAI</h1>
+      <h1>DECAI</h1>
       <p class="read-the-docs">
         Example client sending inference request to decentralized servers. Click on an image to ask the server which
         digit it is.
@@ -31,15 +31,33 @@
       </div>
 
       <div>
+        <h3 id="inference_label"></h3>
         <img id="image_to_inference" />
-        <pre id="inference_output" />
+        <div id="graph_parent" style="width: 800px; display: none;">
+          <canvas id="graph" />
+        </div>
       </div>
 
 
       <pre id="status" />
     </div>
   </div>
-  <script type="module" src="/src/main.ts"></script>
+  <!-- <script type="module">
+    const svg = document.getElementById("svg");
+
+
+    import init, * as wasmFunctions from "@ezkljs/engine/web/ezkl.js";
+    // init()
+    init(
+      undefined,
+      new WebAssembly.Memory({ initial: 20, maximum: 4096, shared: true }),
+    )
+      .then(() => {
+        console.log('done');
+      })
+
+  </script> -->
+  <script type="module" src="./src/main.ts"></script>
 </body>
 
 </html>

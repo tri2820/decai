@@ -1,7 +1,6 @@
-import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
-import { kadDHT } from '@libp2p/kad-dht'
+// import { kadDHT } from '@libp2p/kad-dht'
 import * as filters from '@libp2p/websockets/filters'
 // import { mdns } from '@libp2p/mdns'
 // import { tcp } from '@libp2p/tcp'
@@ -37,7 +36,7 @@ export async function createLibp2p (options?: Libp2pOptions) {
     // ],  
     services: {
       identify: identifyService(),
-      pubsub: gossipsub(),
+      // pubsub: gossipsub(),
       // dht: kadDHT()
     },
     connectionManager: {

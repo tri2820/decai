@@ -1,1 +1,1 @@
-export const PROTOCOL_NAME='/zkai/1.0.0'
+export const PROTOCOL_NAME='/decai/1.0.0'

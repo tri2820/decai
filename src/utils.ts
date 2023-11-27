@@ -4,8 +4,7 @@ import map from "it-map";
 import { pipe } from "it-pipe";
 import { pushable } from 'it-pushable';
 import { pack, unpack } from "msgpackr";
-// import sharp from "sharp";
-import { Message } from "./zkai";
+import type { Message } from "./decai";
 
 
 export function createSendQueue(stream: Stream) {
