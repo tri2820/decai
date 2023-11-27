@@ -42,6 +42,7 @@ export type InferenceOutputMessage = {
   task_id: string;
   witness: Data;
   proof: Data;
+  // Say the companies prepared a dozen of keys already (clients don't have to generate them again)
   verifying_key: Data;
 };
 

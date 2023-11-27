@@ -1,14 +1,16 @@
 import "./style.css";
 
 import init, * as wasmFunctions from "@ezkljs/engine/web/ezkl";
+import { multiaddr } from "@multiformats/multiaddr";
+import * as cv from "@techstark/opencv-js";
 import Chart from "chart.js/auto";
 import { CID } from "multiformats/cid";
-import * as cv from "@techstark/opencv-js";
 import { PROTOCOL_NAME } from "./constants";
+import type { Message } from "./decai";
 import { createLibp2p } from "./libp2p";
 import { createSendQueue, handleIncomingMessages } from "./utils.ts";
-import { multiaddr } from "@multiformats/multiaddr";
-import type { Message } from "./decai";
+import * as json from "multiformats/codecs/json";
+import { sha256 } from "multiformats/hashes/sha2";
 
 await init();
 
@@ -51,9 +53,7 @@ const setInferenceResult = (verified: boolean, outputs: number[][]) => {
   );
   log(`server said that image is ${predicted_digits.at(0)}`);
 
-  DOM.inference_label.innerText = `Verified: ${verified}, inference result: image is digit ${predicted_digits.at(
-    0
-  )}`;
+  DOM.inference_label.innerText = `Inference result: image is digit ${predicted_digits.at(0)}, verified that server indeed used the input and model we requested: ${verified}`;
 
   DOM.graph_parent.style.display = "block";
   const data = outputs.at(0)!.map((v, i) => ({
@@ -84,10 +84,6 @@ async function initClient() {
   client.addEventListener("peer:connect", async (evt) => {
     log(`connected to peer ${evt.detail}`);
   });
-
-  //   client.addEventListener('peer:discovery', function (evt: any) {
-  //     log('found peer: ', evt)
-  //   });
 
   // Manually dial to the server
   const serverMultiAddr =
@@ -181,18 +177,21 @@ async function initClient() {
     })
   );
 
-  const mnist_cid = CID.parse("bagaaierasords4njcts6vs7qvdjfcvgnume4hqohf65zsfguprqphs3icwea");
 
+  // Searching for servers providing MNIST classification service
+  const bytes = json.encode({ model: "mnist" });
+  const hash = await sha256.digest(bytes);
+  const cid = CID.create(1, json.code, hash);
   setTimeout(async () => {
     try {
-      const hproviders = client.contentRouting.findProviders(mnist_cid);
+      const hproviders = client.contentRouting.findProviders(cid );
       for await (const evt of hproviders) {
-        log(`found peer providing ${mnist_cid}: ${evt.id}`);
+        log(`found peer providing ${cid}: ${evt.id}`);
       }
     } catch {
       log("debug didnt find one");
     }
-  }, 1500)  
+  }, 1500);
 }
 
 initClient();

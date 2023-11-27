@@ -26,15 +26,8 @@ export async function createLibp2p (options?: Libp2pOptions) {
         return false
       }
     },
-    // peerDiscovery: [
-    //   mdns()
-    // ],  
-    // peerRouting: [
-    //   delegatedContentRouting(client)
-    // ],  
     services: {
       identify: identifyService(),
-      // pubsub: gossipsub(),
       dht: kadDHT()
     },
     connectionManager: {
