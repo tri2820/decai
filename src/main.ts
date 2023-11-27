@@ -5,14 +5,18 @@ import { multiaddr } from "@multiformats/multiaddr";
 import * as cv from "@techstark/opencv-js";
 import Chart from "chart.js/auto";
 import { CID } from "multiformats/cid";
-import { PROTOCOL_NAME } from "./constants";
-import type { Message } from "./decai";
-import { createLibp2p } from "./libp2p";
-import { createSendQueue, handleIncomingMessages } from "./utils.ts";
 import * as json from "multiformats/codecs/json";
 import { sha256 } from "multiformats/hashes/sha2";
+import { PROTOCOL_NAME } from "../shared/constants.ts";
+import type { Message } from "../shared/decai";
+import { createLibp2p } from "../shared/libp2p.ts";
+import { createSendQueue, handleIncomingMessages } from "../shared/utils.ts";
 
 await init();
+
+const state : {[task_id: string] : {
+  verifying_key: Uint8ClampedArray
+}} = {}
 
 const DOM = {
   digits: [...document.getElementsByClassName("digit")] as HTMLImageElement[],
@@ -108,7 +112,7 @@ async function initClient() {
     // Verify that the server used the model + input that we asked
     const verified = wasmFunctions.verify(
       message.inference_output.proof.data!,
-      message.inference_output.verifying_key.data!,
+      state[message.inference_output.task_id].verifying_key,
       circuit_settings_ser,
       srs
     );
@@ -153,12 +157,40 @@ async function initClient() {
       const srsFile = await fetch("/14.srs");
       const srsBuffer = await srsFile.arrayBuffer();
       const srsData = new Uint8ClampedArray(srsBuffer);
+      
+      const mnist_circuit_File = await fetch("/network.compiled");
+      const mnist_circuit_Buffer = await mnist_circuit_File.arrayBuffer();
+      const mnist_circuit_ser = new Uint8ClampedArray(mnist_circuit_Buffer);
 
       const task_id = "123-123-123";
 
-      const message = {
+      // Generate verifying key
+      const vk = wasmFunctions.genVk(
+        mnist_circuit_ser,
+        srsData
+      );
+      const vk_ser = new Uint8ClampedArray(vk.buffer);
+
+      state[task_id] = {
+        verifying_key: vk_ser
+      }
+
+      // Generate proving key
+      const pk = wasmFunctions.genPk(
+        vk_ser,
+        mnist_circuit_ser,
+        srsData
+      );
+      const pk_ser = new Uint8ClampedArray(pk.buffer);
+      console.log('debug pk_ser', pk_ser, pk_ser.length);
+
+
+      const message : Message = {
         inference_request: {
           task_id,
+          proving_key: {
+            data: pk_ser
+          },
           input: {
             data,
           },

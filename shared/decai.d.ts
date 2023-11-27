@@ -33,6 +33,7 @@ export type InferenceRequestMessage = {
   input: Data;
   model: Model;
   srs: Data;
+  proving_key: Data;
   invoice_fulfilled?: {
     invoice_id: string;
   };
@@ -43,7 +44,7 @@ export type InferenceOutputMessage = {
   witness: Data;
   proof: Data;
   // Say the companies prepared a dozen of keys already (clients don't have to generate them again)
-  verifying_key: Data;
+  // verifying_key: Data;
 };
 
 export type PrivateModelClaimMessage = {

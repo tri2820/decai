@@ -19,5 +19,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "scripts/peer-id-server.ts"]
+  "include": ["src", "scripts/peer-id-server.ts", "shared/constants.ts", "shared/decai.d.ts", "shared/utils.ts", "shared/libp2p.ts"]
 }
