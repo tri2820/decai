@@ -1,6 +1,6 @@
 # Decai - Decentralized AI
 
-Decai is a peer-to-peer application protocol tailored for AI services. It facilitates a network where participants are categorized as clients, who request services, or servers, who provide them. The services range from simple tasks like image classification and text completion to more complex applications such as chatbots and AI-driven stock trading algorithms.
+Decai is a peer-to-peer application protocol designed for AI services. It facilitates a network where participants are categorized as clients, who request services, or servers, who provide them. The services range from simple tasks like image classification and text completion to more complex applications such as chatbots and AI-driven stock trading algorithms.
 
 At its core, Decai utilizes zero-knowledge proofs (ZKPs) to prove and verify the execution of a specific AI model with given inputs. This technology enables a fully decentralized and trustless environment for AI services.
 
@@ -19,6 +19,7 @@ npm run server
 # Launch a browser client in Terminal B
 npm run dev
 ```
+Generating verifying key & inferencing may take a few minutes. The demo video is `decai_demo.mp4` in this repo.
 
 ## Client/Server Communication
 The primary use case for Decai involves clients sending inference requests and servers responding with inference outputs. 
@@ -125,7 +126,7 @@ ZKP proofs can hide certain information, allowing for private inputs or model we
 
 ## Future Work
 Several areas for future development include:
-1. Current implementation generates proof that a specific model has been run. This means the client has to have access to the (heavy) model weights. We can change this to generate proof of a model with specific hash. This would keep the protocol secured while solving the issue.
+1. Current implementation generates proof that a specific model has been run. This means the client has to have access to the (heavy) model weights. We can solve this issue by generating proof of a model *with specific hash* has been run instead.
 2. Implementing a verification layer for the powers-of-tau SRS files to prevent collusion in currency generation. 
 3. Speeding up the generation of private keys.
 4. Expanding support to more models, such as nanoGPT.

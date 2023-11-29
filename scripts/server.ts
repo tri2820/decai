@@ -32,6 +32,7 @@ async function run() {
     const remotePeer = evt.detail;
     console.log("connected to:", remotePeer.toString());
 
+    // Here we just simply reannounce everytime a new peer connects to us
     setTimeout(async () => {
       const bytes = json.encode({
         model: "mnist",

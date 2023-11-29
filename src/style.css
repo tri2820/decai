@@ -59,3 +59,8 @@ h1 {
   width: 128px;
   height: 128px;
 }
+
+.digit:hover {
+  cursor: pointer;
+  border-radius: 9999px;
+}

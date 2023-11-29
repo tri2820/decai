@@ -22,6 +22,22 @@ async function readDataFile(filePath: string): Promise<Uint8ClampedArray> {
   return ser;
 }
 
+const log = (line: string) => {
+  console.log(line);
+  DOM.status.innerText += line + "\n";
+};
+
+let chart = new Chart(document.getElementById("graph") as any, {
+  type: "bar",
+  data: {
+    labels: [] as string[],
+    datasets: [],
+  },
+  options: {
+    indexAxis: "y",
+  },
+});
+
 const state: {
   [task_id: string]: {
     verifying_key: Uint8ClampedArray;
@@ -39,22 +55,6 @@ const DOM = {
   ) as HTMLImageElement,
   graph_parent: document.getElementById("graph_parent") as HTMLImageElement,
 };
-
-const log = (line: string) => {
-  console.log(line);
-  DOM.status.innerText += line + "\n";
-};
-
-let chart = new Chart(document.getElementById("graph") as any, {
-  type: "bar",
-  data: {
-    labels: [] as string[],
-    datasets: [],
-  },
-  options: {
-    indexAxis: "y",
-  },
-});
 
 const setInferenceResult = (verified: boolean, outputs: number[][]) => {
   // We are using MNIST so we try to get the predicted digit
@@ -132,7 +132,7 @@ async function initClient() {
     );
     const circuit_settings = wasmFunctions.deserialize(circuit_settings_ser);
 
-    // Outputs contain probababilities of each digit class
+    // Outputs contain logit of each digit class
     const outputs: number[][] = witness_des.outputs.map((output: any, i: any) =>
       output.map((item: any) => {
         const x = wasmFunctions.serialize(item);
@@ -168,6 +168,7 @@ async function initClient() {
       const srs_ser = await readDataFile("/14.srs");
       const mnist_circuit_ser = await readDataFile("/network.compiled");
 
+      // Should have been hash of the message, but just random for now
       const task_id = uuidv4();
 
       // Generate verifying key
