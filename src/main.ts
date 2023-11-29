@@ -7,6 +7,7 @@ import Chart from "chart.js/auto";
 import { CID } from "multiformats/cid";
 import * as json from "multiformats/codecs/json";
 import { sha256 } from "multiformats/hashes/sha2";
+import { v4 as uuidv4 } from "uuid";
 import { PROTOCOL_NAME } from "../shared/constants.ts";
 import type { Message } from "../shared/decai";
 import { createLibp2p } from "../shared/libp2p.ts";
@@ -14,9 +15,18 @@ import { createSendQueue, handleIncomingMessages } from "../shared/utils.ts";
 
 await init();
 
-const state : {[task_id: string] : {
-  verifying_key: Uint8ClampedArray
-}} = {}
+async function readDataFile(filePath: string): Promise<Uint8ClampedArray> {
+  const file = await fetch(filePath);
+  const buffer = await file.arrayBuffer();
+  const ser = new Uint8ClampedArray(buffer);
+  return ser;
+}
+
+const state: {
+  [task_id: string]: {
+    verifying_key: Uint8ClampedArray;
+  };
+} = {};
 
 const DOM = {
   digits: [...document.getElementsByClassName("digit")] as HTMLImageElement[],
@@ -57,7 +67,9 @@ const setInferenceResult = (verified: boolean, outputs: number[][]) => {
   );
   log(`server said that image is ${predicted_digits.at(0)}`);
 
-  DOM.inference_label.innerText = `Inference result: image is digit ${predicted_digits.at(0)}, verified that server indeed used the input and model we requested: ${verified}`;
+  DOM.inference_label.innerText = `Inference result: image is digit ${predicted_digits.at(
+    0
+  )}, verified that server indeed used the input and model we requested: ${verified}`;
 
   DOM.graph_parent.style.display = "block";
   const data = outputs.at(0)!.map((v, i) => ({
@@ -100,21 +112,17 @@ async function initClient() {
     if (!message.inference_output) return;
 
     // Load the model settings
-    const circuitFile = await fetch("/settings.json");
-    const circuitSettingsBuffer = await circuitFile.arrayBuffer();
-    const circuit_settings_ser = new Uint8ClampedArray(circuitSettingsBuffer);
+    const circuit_settings_ser = await readDataFile("/settings.json");
 
     // Load the respective SRS file that we asked the server to use
-    const srsFile = await fetch("/14.srs");
-    const srsBuffer = await srsFile.arrayBuffer();
-    const srs = new Uint8ClampedArray(srsBuffer);
+    const srs_ser = await readDataFile("/14.srs");
 
     // Verify that the server used the model + input that we asked
     const verified = wasmFunctions.verify(
       message.inference_output.proof.data!,
       state[message.inference_output.task_id].verifying_key,
       circuit_settings_ser,
-      srs
+      srs_ser
     );
     log(`verified: ${verified}`);
 
@@ -142,54 +150,43 @@ async function initClient() {
   DOM.digits.forEach((d) =>
     d.addEventListener("click", async () => {
       log("clicked");
-      DOM.inference_label.innerText = "Inferencing...";
-
+      log("generating verifying key");
+      DOM.inference_label.innerText = "Generating verifying key...";
       DOM.image_to_inference.src = d.src;
+      DOM.graph_parent.style.display = "hidden";
 
       let mat = cv.imread(d);
-      let m = new cv.Mat();
-      cv.cvtColor(mat, m, cv.COLOR_BGR2GRAY);
+      let gray_mat = new cv.Mat();
+      cv.cvtColor(mat, gray_mat, cv.COLOR_BGR2GRAY);
 
-      const pixelArray = Float32Array.from(m.data).map((pixel) => pixel / 255);
-      const inputData = { input_data: [Array.from(pixelArray)] };
-      const data = wasmFunctions.serialize(inputData);
+      const pixel_array = Float32Array.from(gray_mat.data).map(
+        (pixel) => pixel / 255
+      );
+      const input = { input_data: [Array.from(pixel_array)] };
+      const data = wasmFunctions.serialize(input);
 
-      const srsFile = await fetch("/14.srs");
-      const srsBuffer = await srsFile.arrayBuffer();
-      const srsData = new Uint8ClampedArray(srsBuffer);
-      
-      const mnist_circuit_File = await fetch("/network.compiled");
-      const mnist_circuit_Buffer = await mnist_circuit_File.arrayBuffer();
-      const mnist_circuit_ser = new Uint8ClampedArray(mnist_circuit_Buffer);
+      const srs_ser = await readDataFile("/14.srs");
+      const mnist_circuit_ser = await readDataFile("/network.compiled");
 
-      const task_id = "123-123-123";
+      const task_id = uuidv4();
 
       // Generate verifying key
-      const vk = wasmFunctions.genVk(
-        mnist_circuit_ser,
-        srsData
-      );
+      const vk = wasmFunctions.genVk(mnist_circuit_ser, srs_ser);
       const vk_ser = new Uint8ClampedArray(vk.buffer);
 
       state[task_id] = {
-        verifying_key: vk_ser
-      }
+        verifying_key: vk_ser,
+      };
 
       // Generate proving key
-      const pk = wasmFunctions.genPk(
-        vk_ser,
-        mnist_circuit_ser,
-        srsData
-      );
+      const pk = wasmFunctions.genPk(vk_ser, mnist_circuit_ser, srs_ser);
       const pk_ser = new Uint8ClampedArray(pk.buffer);
-      console.log('debug pk_ser', pk_ser, pk_ser.length);
 
-
-      const message : Message = {
+      const message: Message = {
         inference_request: {
           task_id,
           proving_key: {
-            data: pk_ser
+            data: pk_ser,
           },
           input: {
             data,
@@ -198,17 +195,17 @@ async function initClient() {
             id: "mnist",
           },
           srs: {
-            data: srsData,
+            data: srs_ser,
           },
         },
       };
 
+      DOM.inference_label.innerText = "Inferencing...";
       log("sent request to server");
       sendQueue.push(message);
       log("waiting for inference");
     })
   );
-
 
   // Searching for servers providing MNIST classification service
   const bytes = json.encode({ model: "mnist" });
@@ -216,9 +213,9 @@ async function initClient() {
   const cid = CID.create(1, json.code, hash);
   setTimeout(async () => {
     try {
-      const hproviders = client.contentRouting.findProviders(cid );
+      const hproviders = client.contentRouting.findProviders(cid);
       for await (const evt of hproviders) {
-        log(`found peer providing ${cid}: ${evt.id}`);
+        log(`found peer providing model ${cid}: ${evt.id}`);
       }
     } catch {
       log("debug didnt find one");

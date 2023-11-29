@@ -33,8 +33,8 @@ async function run() {
     console.log("connected to:", remotePeer.toString());
 
     setTimeout(async () => {
-      const bytes = json.encode({ 
-        model: "mnist" 
+      const bytes = json.encode({
+        model: "mnist",
       });
       const hash = await sha256.digest(bytes);
       const cid = CID.create(1, json.code, hash);
@@ -57,7 +57,12 @@ async function run() {
 
       // Load the model
       const __dirname = path.dirname(fileURLToPath(import.meta.url));
-      const networkPath = path.join(__dirname, "..", "public", "network.compiled");
+      const networkPath = path.join(
+        __dirname,
+        "..",
+        "public",
+        "network.compiled"
+      );
       const mnist_circuit_ser = await readDataFile(networkPath);
 
       // Generate witness, which contains both the result and materials to generate proof
@@ -66,21 +71,6 @@ async function run() {
         message.inference_request.input.data
       );
       const witness_ser = new Uint8ClampedArray(witness.buffer);
-
-      // // Generate verifying key
-      // const vk = wasmFunctions.genVk(
-      //   mnist_circuit_ser,
-      //   message.inference_request.srs.data
-      // );
-      // const vk_ser = new Uint8ClampedArray(vk.buffer);
-
-      // // Generate proving key
-      // const pk = wasmFunctions.genPk(
-      //   vk_ser,
-      //   mnist_circuit_ser,
-      //   message.inference_request.srs.data
-      // );
-      // const pk_ser = new Uint8ClampedArray(pk.buffer);
 
       // Generate proof
       const proof = wasmFunctions.prove(
@@ -91,7 +81,7 @@ async function run() {
       );
       const proof_ser = new Uint8ClampedArray(proof.buffer);
 
-      const response : Message = {
+      const response: Message = {
         inference_output: {
           task_id: message.inference_request.task_id,
           witness: {
@@ -99,7 +89,7 @@ async function run() {
           },
           proof: {
             data: proof_ser,
-          }
+          },
         },
       };
 
